@@ -4,6 +4,11 @@ import pennylane as qml
 from pennylane import numpy as np
 from pennylane.optimize import NesterovMomentumOptimizer, AdamOptimizer, GradientDescentOptimizer
 
+"""
+copy vqc and load parity data
+it works, but the result is bad
+And the optimize method can't be changed, the next goal is to change Adam optimize
+"""
 
 dev = qml.device('default.qubit', wires=4)
 # dev = qml.device('qiskit.basicaer', wires=4)
