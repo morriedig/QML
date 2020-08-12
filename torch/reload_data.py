@@ -72,6 +72,11 @@ def circuit(weights, x=None, y=None):
 		# qml.RX(x[2], wires=0)
 		# qml.Rot(x[0], x[1] ,x[2], wires=0)
 		# qml.Rot(W[0], W[1], W[2], wires=0)
+		qml.Rot(*W, wires=0)
+		qml.Rot(*x, wires=0)
+		qml.Rot(*W, wires=0)
+		qml.Rot(*x, wires=0)
+		qml.Rot(*W, wires=0)
 		qml.Rot(*x, wires=0)
 		qml.Rot(*W, wires=0)
 		if y == 0:
@@ -120,7 +125,7 @@ def cost(weights, x, y):
   for i in range(len(x)):
     f = circuit(weights, x=x[i], y=y[i])
     # print(f)
-    # print("000")
+    # print("----")
     loss = loss + (1 - f) ** 2
   # predictions = [variational_classifier(Q_circuit = Q_circuit, Q_bias = Q_bias, angles=item) for item in features]
   # print(accuracy(labels, predictions))
@@ -148,10 +153,6 @@ def test(weights, x, y):
   # return predicted, fidelity_values
 
 def accuracy_score(y_true, y_pred):
-  # print(y_pred)
-  # print("-----------")
-  # print(y_true)
-  # print(y_pred)
   score = y_true == y_pred
   return score.sum() / len(y_true)
 
@@ -164,9 +165,10 @@ def closure():
   opt.zero_grad()
   loss = cost(weights = Q_circuit[0], x = Xbatch, y = ybatch)
   loss.backward()
+  # print(loss)
+  # print("======")
   return loss
 
-# data = np.loadtxt("check_5.txt") # 這邊直接用 pytorch read 檔案！？
 X = Xdata
 Y = ydata
 X = np.hstack((X, np.zeros((X.shape[0], 1))))
@@ -185,14 +187,14 @@ init_bias = Variable(torch.tensor([0.0, 0.0, 0.0, 0.0], device='cpu').type(dtype
 
 Q_circuit = init_circuit
 Q_bias = init_bias
-batch_size = 32
+batch_size = 150
 
 # target_Q_circuit = Q_circuit.clone().detach()
 # target_Q_bias = Q_bias.clone().detach()
 
 opt = torch.optim.Adam([Q_circuit, Q_bias], lr = 0.6)
 
-for i in range(50):
+for i in range(20):
   for Xbatch, ybatch in iterate_minbatches(X_sample, y_sample, batch_size=batch_size):
     print(opt.step(closure))
   # batch_index = np.random.randint(0, len(X), (batch_size,))
