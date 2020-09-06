@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 """
 產生數據，並繪圖
 """
+
 def datas_create(samples, center=[0.0, 0.0], radius=np.sqrt(2 / np.pi)): # 產生數據
     Xvals, yvals = [], []
 
@@ -33,9 +34,9 @@ def plot_data(x, y, fig=None, ax=None):
     ax.set_ylabel("$x_2$")
 
 Xdata, ydata = datas_create(500)
-# fig, ax = plt.subplots(1, 1, figsize=(4, 4))
-# plot_data(Xdata, ydata, fig=fig, ax=ax)
-# plt.show()  # 畫出原始數據圖
+fig, ax = plt.subplots(1, 1, figsize=(4, 4))
+plot_data(Xdata, ydata, fig=fig, ax=ax)
+plt.savefig('./result/origin.png')  # 畫出原始數據圖
 
 
 
@@ -58,27 +59,38 @@ dev = qml.device('default.qubit', wires=1)
 
 
 @qml.qnode(dev, interface='torch')
-def circuit(weights, x=None, y=None):
+def circuit(weights, x=None, y=None, bias=None):
 	# statepreparation(angles)
-	# print(weights)
+	# print(weights[0])
 	# print("==================")
 	# print(x)
 	# print('==================')
 	# print(y)
-	for W in weights:
+	# print(bias)
+	for W in weights[0]:
 		# qml.Rot(*x, wires=0)
 		# qml.RX(x[0], wires=0)
 		# qml.RY(x[1], wires=0)
 		# qml.RX(x[2], wires=0)
+		# qml.Hadamard(wires=0)
+		# qml.Rot(x[0], x[1],x[2], wires=0)
+		qml.Rot(W[0], W[1], W[2], wires=0)
+		qml.Rot(x[0], x[1],x[2], wires=0)
+		# print("=============")
+		# print(W[0].val)
+		# print("=============")
+		# print(x[0])
+		# print("=============")
+		# qml.Rot(W[0], W[1], W[2], wires=0)
+		# qml.Rot(x[0], x[1] ,x[2], wires=0)
+		qml.Rot(W[3], W[4], W[5], wires=0)
+		qml.Rot(x[0], x[1] ,x[2], wires=0)
+		qml.Rot(W[0], W[1], W[2], wires=0)
+		qml.Rot(x[0], x[1] ,x[2], wires=0)
 		# qml.Rot(x[0], x[1] ,x[2], wires=0)
 		# qml.Rot(W[0], W[1], W[2], wires=0)
-		qml.Rot(*W, wires=0)
-		qml.Rot(*x, wires=0)
-		qml.Rot(*W, wires=0)
-		qml.Rot(*x, wires=0)
-		qml.Rot(*W, wires=0)
-		qml.Rot(*x, wires=0)
-		qml.Rot(*W, wires=0)
+		# qml.Rot(W[0].val * x[0] * W[3].val, W[1].val * x[1] * W[4].val, W[2].val * x[2] * W[5].val, wires=0)
+		# print(len(x))
 		if y == 0:
 				y = np.array([[1, 0],[0, 0]])
 		else:
@@ -120,10 +132,10 @@ def circuit(weights, x=None, y=None):
 
 # 	return loss
 
-def cost(weights, x, y):
+def cost(weights, x, y, bias):
   loss = 0.0
   for i in range(len(x)):
-    f = circuit(weights, x=x[i], y=y[i])
+    f = circuit(weights, x=x[i], y=y[i], bias=bias)
     # print(f)
     # print("----")
     loss = loss + (1 - f) ** 2
@@ -137,7 +149,7 @@ def test(weights, x, y):
   predicted = []
   y = [0 ,1]
   for i in range(len(x)):
-    fidel_function = lambda y: circuit(weights, x=x[i], y=y)
+    fidel_function = lambda y: circuit(weights, x=x[i], y=y, bias=Q_bias)
     fidelities = [fidel_function(dm).item() for dm in y]
     # fidelities = [circuit(weights, x[i], label).item() for label in y]
     # print(fidelities)
@@ -163,7 +175,7 @@ def iterate_minbatches(inputs, targets, batch_size):
 
 def closure():
   opt.zero_grad()
-  loss = cost(weights = Q_circuit[0], x = Xbatch, y = ybatch)
+  loss = cost(weights = Q_circuit, x = Xbatch, y = ybatch, bias=Q_bias)
   loss.backward()
   # print(loss)
   # print("======")
@@ -182,39 +194,203 @@ dtype = torch.DoubleTensor
 num_qubits = 1 #  wires
 num_layers = 1 # layer
 
-init_circuit = Variable(torch.tensor(0.1 * np.random.randn(num_layers, num_qubits, 3), device='cpu').type(dtype), requires_grad=True) # random circuit
-init_bias = Variable(torch.tensor([0.0, 0.0, 0.0, 0.0], device='cpu').type(dtype), requires_grad=True) # random bias
+for repeat_time in range(10):
+  accuate_array = []
+  loss_array = []
 
-Q_circuit = init_circuit
-Q_bias = init_bias
-batch_size = 150
+  init_circuit = Variable(torch.tensor(0.1 * np.random.randn(num_layers, num_qubits, 6), device='cpu').type(dtype), requires_grad=True) # random circuit
+  init_bias = Variable(torch.tensor(np.random.randn(3), device='cpu').type(dtype), requires_grad=True) # random bias
 
-# target_Q_circuit = Q_circuit.clone().detach()
-# target_Q_bias = Q_bias.clone().detach()
+  Q_circuit = init_circuit
+  Q_bias = init_bias
+  batch_size = 50
 
-opt = torch.optim.Adam([Q_circuit, Q_bias], lr = 0.6)
+  # target_Q_circuit = Q_circuit.clone().detach()
+  # target_Q_bias = Q_bias.clone().detach()
 
-for i in range(20):
-  for Xbatch, ybatch in iterate_minbatches(X_sample, y_sample, batch_size=batch_size):
-    print(opt.step(closure))
-  # batch_index = np.random.randint(0, len(X), (batch_size,))
-  # for x in batch_index:
-  #   X_train = X_sample[batch_index]
-  #   Y_train = y_sample[batch_index]
-    # p1n, p2n = opt.param_groups[0]["params"]
-    # Q_circuit = p1n
+  opt = torch.optim.Adam([Q_bias, Q_circuit], lr = 0.6)
+
+  for i in range(25):
+    for Xbatch, ybatch in iterate_minbatches(X_sample, y_sample, batch_size=batch_size):
+      # print(opt.step(closure).item())
+      # print(Q_circuit)
+      opt.step(closure)
+      # print(Q_bias)
+    # batch_index = np.random.randint(0, len(X), (batch_size,))
+    # for x in batch_index:
+    #   X_train = X_sample[batch_index]
+    #   Y_train = y_sample[batch_index]
+      # p1n, p2n = opt.param_groups[0]["params"]
+      # Q_circuit = p1n
+      # opt.step(closure)
+      # print(opt.step(closure))
+    
     # opt.step(closure)
+
+
+    # costn = cost(init_circuit, init_bias, X, Y)
     # print(opt.step(closure))
-  
-  # opt.step(closure)
+    predicted_train, fidel_train = test(Q_circuit, X_sample, y_sample)
+    # print(len(Y[batch_index]))
+    accuracy_train = accuracy_score(predicted_train, ydata)
+    accuate_array.append([i+1, accuracy_train])
+    
+    # print(i+1)
+  fig, ax = plt.subplots(1, 1, figsize=(4, 4))
+  plot_data(Xdata, predicted_train, fig=fig, ax=ax)
+  # plt.show()  # 畫出原始數據圖
+  # print(accuate_array)
+  with open("./result/no_bias_w1xw2x-25/result" + str(repeat_time) + ".txt", "w") as output:
+    output.write(str(accuate_array))
+  plt.savefig('./result/no_bias_w1xw2x-25/result'+ str(repeat_time) +'.png')
 
 
-  # costn = cost(init_circuit, init_bias, X, Y)
-  # print(opt.step(closure))
-  predicted_train, fidel_train = test(Q_circuit, X_sample, y_sample)
-  # print(len(Y[batch_index]))
-  accuracy_train = accuracy_score(predicted_train, ydata)
-  print(accuracy_train)
-fig, ax = plt.subplots(1, 1, figsize=(4, 4))
-plot_data(Xdata, predicted_train, fig=fig, ax=ax)
-plt.show()  # 畫出原始數據圖
+for repeat_time in range(10):
+  accuate_array = []
+  loss_array = []
+
+  init_circuit = Variable(torch.tensor(0.1 * np.random.randn(num_layers, num_qubits, 6), device='cpu').type(dtype), requires_grad=True) # random circuit
+  init_bias = Variable(torch.tensor(np.random.randn(3), device='cpu').type(dtype), requires_grad=True) # random bias
+
+  Q_circuit = init_circuit
+  Q_bias = init_bias
+  batch_size = 50
+
+  # target_Q_circuit = Q_circuit.clone().detach()
+  # target_Q_bias = Q_bias.clone().detach()
+
+  opt = torch.optim.Adam([Q_bias, Q_circuit], lr = 0.6)
+
+  for i in range(50):
+    for Xbatch, ybatch in iterate_minbatches(X_sample, y_sample, batch_size=batch_size):
+      # print(opt.step(closure).item())
+      # print(Q_circuit)
+      opt.step(closure)
+      # print(Q_bias)
+    # batch_index = np.random.randint(0, len(X), (batch_size,))
+    # for x in batch_index:
+    #   X_train = X_sample[batch_index]
+    #   Y_train = y_sample[batch_index]
+      # p1n, p2n = opt.param_groups[0]["params"]
+      # Q_circuit = p1n
+      # opt.step(closure)
+      # print(opt.step(closure))
+    
+    # opt.step(closure)
+
+
+    # costn = cost(init_circuit, init_bias, X, Y)
+    # print(opt.step(closure))
+    predicted_train, fidel_train = test(Q_circuit, X_sample, y_sample)
+    # print(len(Y[batch_index]))
+    accuracy_train = accuracy_score(predicted_train, ydata)
+    accuate_array.append([i+1, accuracy_train])
+    
+    # print(i+1)
+  fig, ax = plt.subplots(1, 1, figsize=(4, 4))
+  plot_data(Xdata, predicted_train, fig=fig, ax=ax)
+  # plt.show()  # 畫出原始數據圖
+  # print(accuate_array)
+  with open("./result/no_bias_w1xw2x-50/result" + str(repeat_time) + ".txt", "w") as output:
+    output.write(str(accuate_array))
+  plt.savefig('./result/no_bias_w1xw2x-50/result'+ str(repeat_time) +'.png')
+
+for repeat_time in range(10):
+  accuate_array = []
+  loss_array = []
+
+  init_circuit = Variable(torch.tensor(0.1 * np.random.randn(num_layers, num_qubits, 6), device='cpu').type(dtype), requires_grad=True) # random circuit
+  init_bias = Variable(torch.tensor(np.random.randn(3), device='cpu').type(dtype), requires_grad=True) # random bias
+
+  Q_circuit = init_circuit
+  Q_bias = init_bias
+  batch_size = 50
+
+  # target_Q_circuit = Q_circuit.clone().detach()
+  # target_Q_bias = Q_bias.clone().detach()
+
+  opt = torch.optim.Adam([Q_bias, Q_circuit], lr = 0.6)
+
+  for i in range(100):
+    for Xbatch, ybatch in iterate_minbatches(X_sample, y_sample, batch_size=batch_size):
+      # print(opt.step(closure).item())
+      # print(Q_circuit)
+      opt.step(closure)
+      # print(Q_bias)
+    # batch_index = np.random.randint(0, len(X), (batch_size,))
+    # for x in batch_index:
+    #   X_train = X_sample[batch_index]
+    #   Y_train = y_sample[batch_index]
+      # p1n, p2n = opt.param_groups[0]["params"]
+      # Q_circuit = p1n
+      # opt.step(closure)
+      # print(opt.step(closure))
+    
+    # opt.step(closure)
+
+
+    # costn = cost(init_circuit, init_bias, X, Y)
+    # print(opt.step(closure))
+    predicted_train, fidel_train = test(Q_circuit, X_sample, y_sample)
+    # print(len(Y[batch_index]))
+    accuracy_train = accuracy_score(predicted_train, ydata)
+    accuate_array.append([i+1, accuracy_train])
+    
+    # print(i+1)
+  fig, ax = plt.subplots(1, 1, figsize=(4, 4))
+  plot_data(Xdata, predicted_train, fig=fig, ax=ax)
+  # plt.show()  # 畫出原始數據圖
+  # print(accuate_array)
+  with open("./result/no_bias_w1xw2x-100/result" + str(repeat_time) + ".txt", "w") as output:
+    output.write(str(accuate_array))
+  plt.savefig('./result/no_bias_w1xw2x-100/result'+ str(repeat_time) +'.png')
+
+for repeat_time in range(10):
+  accuate_array = []
+  loss_array = []
+
+  init_circuit = Variable(torch.tensor(0.1 * np.random.randn(num_layers, num_qubits, 6), device='cpu').type(dtype), requires_grad=True) # random circuit
+  init_bias = Variable(torch.tensor(np.random.randn(3), device='cpu').type(dtype), requires_grad=True) # random bias
+
+  Q_circuit = init_circuit
+  Q_bias = init_bias
+  batch_size = 50
+
+  # target_Q_circuit = Q_circuit.clone().detach()
+  # target_Q_bias = Q_bias.clone().detach()
+
+  opt = torch.optim.Adam([Q_bias, Q_circuit], lr = 0.6)
+
+  for i in range(150):
+    for Xbatch, ybatch in iterate_minbatches(X_sample, y_sample, batch_size=batch_size):
+      # print(opt.step(closure).item())
+      # print(Q_circuit)
+      opt.step(closure)
+      # print(Q_bias)
+    # batch_index = np.random.randint(0, len(X), (batch_size,))
+    # for x in batch_index:
+    #   X_train = X_sample[batch_index]
+    #   Y_train = y_sample[batch_index]
+      # p1n, p2n = opt.param_groups[0]["params"]
+      # Q_circuit = p1n
+      # opt.step(closure)
+      # print(opt.step(closure))
+    
+    # opt.step(closure)
+
+
+    # costn = cost(init_circuit, init_bias, X, Y)
+    # print(opt.step(closure))
+    predicted_train, fidel_train = test(Q_circuit, X_sample, y_sample)
+    # print(len(Y[batch_index]))
+    accuracy_train = accuracy_score(predicted_train, ydata)
+    accuate_array.append([i+1, accuracy_train])
+    
+    # print(i+1)
+  fig, ax = plt.subplots(1, 1, figsize=(4, 4))
+  plot_data(Xdata, predicted_train, fig=fig, ax=ax)
+  # plt.show()  # 畫出原始數據圖
+  # print(accuate_array)
+  with open("./result/no_bias_w1xw2x-150/result" + str(repeat_time) + ".txt", "w") as output:
+    output.write(str(accuate_array))
+  plt.savefig('./result/no_bias_w1xw2x-150/result'+ str(repeat_time) +'.png')
