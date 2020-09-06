@@ -87,6 +87,7 @@ def circuit(weights, x=None, y=None, bias=None):
 		qml.Rot(x[0], x[1] ,x[2], wires=0)
 		qml.Rot(W[0], W[1], W[2], wires=0)
 		qml.Rot(x[0], x[1] ,x[2], wires=0)
+		qml.Rot(W[3], W[4], W[5], wires=0)
 		# qml.Rot(x[0], x[1] ,x[2], wires=0)
 		# qml.Rot(W[0], W[1], W[2], wires=0)
 		# qml.Rot(W[0].val * x[0] * W[3].val, W[1].val * x[1] * W[4].val, W[2].val * x[2] * W[5].val, wires=0)
@@ -240,9 +241,9 @@ for repeat_time in range(10):
   plot_data(Xdata, predicted_train, fig=fig, ax=ax)
   # plt.show()  # 畫出原始數據圖
   # print(accuate_array)
-  with open("./result/no_bias_w1xw2x-25/result" + str(repeat_time) + ".txt", "w") as output:
+  with open("./result/no_bias_w1xw2xw2-25/result" + str(repeat_time) + ".txt", "w") as output:
     output.write(str(accuate_array))
-  plt.savefig('./result/no_bias_w1xw2x-25/result'+ str(repeat_time) +'.png')
+  plt.savefig('./result/no_bias_w1xw2xw2-25/result'+ str(repeat_time) +'.png')
 
 
 for repeat_time in range(10):
@@ -291,9 +292,9 @@ for repeat_time in range(10):
   plot_data(Xdata, predicted_train, fig=fig, ax=ax)
   # plt.show()  # 畫出原始數據圖
   # print(accuate_array)
-  with open("./result/no_bias_w1xw2x-50/result" + str(repeat_time) + ".txt", "w") as output:
+  with open("./result/no_bias_w1xw2xw2-50/result" + str(repeat_time) + ".txt", "w") as output:
     output.write(str(accuate_array))
-  plt.savefig('./result/no_bias_w1xw2x-50/result'+ str(repeat_time) +'.png')
+  plt.savefig('./result/no_bias_w1xw2xw2-50/result'+ str(repeat_time) +'.png')
 
 for repeat_time in range(10):
   accuate_array = []
@@ -341,9 +342,9 @@ for repeat_time in range(10):
   plot_data(Xdata, predicted_train, fig=fig, ax=ax)
   # plt.show()  # 畫出原始數據圖
   # print(accuate_array)
-  with open("./result/no_bias_w1xw2x-100/result" + str(repeat_time) + ".txt", "w") as output:
+  with open("./result/no_bias_w1xw2xw2-100/result" + str(repeat_time) + ".txt", "w") as output:
     output.write(str(accuate_array))
-  plt.savefig('./result/no_bias_w1xw2x-100/result'+ str(repeat_time) +'.png')
+  plt.savefig('./result/no_bias_w1xw2xw2-100/result'+ str(repeat_time) +'.png')
 
 for repeat_time in range(10):
   accuate_array = []
@@ -391,6 +392,6 @@ for repeat_time in range(10):
   plot_data(Xdata, predicted_train, fig=fig, ax=ax)
   # plt.show()  # 畫出原始數據圖
   # print(accuate_array)
-  with open("./result/no_bias_w1xw2x-150/result" + str(repeat_time) + ".txt", "w") as output:
+  with open("./result/no_bias_w1xw2xw2-150/result" + str(repeat_time) + ".txt", "w") as output:
     output.write(str(accuate_array))
-  plt.savefig('./result/no_bias_w1xw2x-150/result'+ str(repeat_time) +'.png')
+  plt.savefig('./result/no_bias_w1xw2xw2-150/result'+ str(repeat_time) +'.png')
